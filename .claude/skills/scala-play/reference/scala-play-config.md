@@ -27,11 +27,10 @@ lazy val root = (project in file("."))
     ),
 
     // ── Compiler options ───────────────────────────────────────
+    // NOTE: Play's sbt plugin already adds -deprecation, -feature, -unchecked.
+    // Do NOT repeat them here — under -Xfatal-warnings, duplicates are fatal errors.
     scalacOptions ++= Seq(
       "-Xfatal-warnings",
-      "-deprecation",
-      "-feature",
-      "-unchecked",
       "-Wunused:all",         // Flag unused imports / bindings
     ),
 
@@ -49,7 +48,7 @@ lazy val root = (project in file("."))
 ## project/plugins.sbt
 
 ```scala
-addSbtPlugin("com.typesafe.play" % "sbt-plugin"        % "3.0.5")
+addSbtPlugin("org.playframework" % "sbt-plugin"        % "3.0.5")  // Play 3.x uses org.playframework, not com.typesafe.play
 addSbtPlugin("org.scalameta"     % "sbt-scalafmt"      % "2.5.2")
 addSbtPlugin("com.github.sbt"    % "sbt-native-packager" % "1.10.4")
 // Optional: hot reload

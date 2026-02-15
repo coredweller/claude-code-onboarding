@@ -21,25 +21,27 @@ Delegate to the `scala-play` skill for all patterns, templates, and reference fi
 
 1. **Create sbt project** — Create `build.sbt`, `project/plugins.sbt`, `project/build.properties` per skill config reference. Use `sbt new playframework/play-scala-seed.g8` or manual scaffold. Set `scalaVersion := "3.3.4"`.
 
-2. **Configure dependencies** — Add to `build.sbt`: Play Framework 3.0.x, Cats Effect 3.x, Cats Core, fs2-core, iron (refined types), scalatest + cats-effect-testing-scalatest. Read `reference/scala-play-config.md` for exact versions and sbt settings (`-Xfatal-warnings`, `-deprecation`).
+2. **Configure dependencies** — Add to `build.sbt`: Play Framework 3.0.x, Cats Effect 3.x, Cats Core, fs2-core, iron (refined types), scalatest + cats-effect-testing-scalatest. Read `reference/scala-play-config.md` for exact versions and sbt settings.
 
 3. **Set up compile-time DI** — Create `AppComponents` extending `BuiltInComponentsFromContext` with `HttpFiltersComponents`. Wire all dependencies manually. Create `AppLoader` extending `ApplicationLoader`. Do NOT use Guice or `@Inject` — compile-time DI is required per the skill.
 
 4. **Configure Play** — Add `application.conf` with secret key (`${APP_SECRET}`), allowed hosts filter, CORS filter config, and CSRF settings. Add `logback.xml` for structured logging. Read `reference/scala-play-config.md` for templates.
 
-5. **Create domain model** — Define a sample `Task` domain:
+5. **Configure Claude** - Add all the items from `.claude` in this repository to the new repository's `.claude` folder that is related to Scala or other general cross cutting items like `code-standards.md` or `code-reviewer`.
+
+6. **Create domain model** — Define a sample `Task` domain:
    - Opaque type `TaskId` wrapping `UUID`
    - `case class Task(id: TaskId, title: String, createdAt: Instant)`
    - Scala 3 `enum TaskError`: `NotFound(id: TaskId)`, `ValidationError(msg: String)`
    - Play JSON `given Format[Task]` (not implicit — use Scala 3 `given`)
 
-6. **Create repository layer** — `TaskRepository` trait with `IO`-returning methods. Implement `InMemoryTaskRepository` backed by `Ref[IO, Map[TaskId, Task]]`. Wire in `AppComponents`. Read `reference/scala-play-templates.md` for template.
+7. **Create repository layer** — `TaskRepository` trait with `IO`-returning methods. Implement `InMemoryTaskRepository` backed by `Ref[IO, Map[TaskId, Task]]`. Wire in `AppComponents`. Read `reference/scala-play-templates.md` for template.
 
-7. **Create service layer** — `TaskService` wrapping repository. All methods return `IO[Either[TaskError, A]]`. No `Future` anywhere — use `IO` throughout. Use `cats-retry` for any external calls.
+8. **Create service layer** — `TaskService` wrapping repository. All methods return `IO[Either[TaskError, A]]`. No `Future` anywhere — use `IO` throughout. Use `cats-retry` for any external calls.
 
-8. **Create controller** — `TaskController(service: TaskService, cc: ControllerComponents)`. All actions use `Action.async`. Convert `IO` to `Future` at the controller boundary using `unsafeToFuture` with an explicit `IORuntime`. Handle `TaskError` exhaustively via pattern match, map to appropriate HTTP status codes.
+9. **Create controller** — `TaskController(service: TaskService, cc: ControllerComponents)`. All actions use `Action.async`. Convert `IO` to `Future` at the controller boundary using `unsafeToFuture` with an explicit `IORuntime`. Handle `TaskError` exhaustively via pattern match, map to appropriate HTTP status codes.
 
-9. **Register routes** — Add to `conf/routes`:
+10. **Register routes** — Add to `conf/routes`:
    ```
    GET    /api/v1/tasks        controllers.TaskController.list
    POST   /api/v1/tasks        controllers.TaskController.create
@@ -47,12 +49,14 @@ Delegate to the `scala-play` skill for all patterns, templates, and reference fi
    GET    /api/v1/health       controllers.HealthController.check
    ```
 
-10. **Create health controller** — `HealthController` returning `200 OK` with JSON `{"status":"ok","timestamp":"..."}`.
+11. **Create health controller** — `HealthController` returning `200 OK` with JSON `{"status":"ok","timestamp":"..."}`.
 
-11. **Add Docker support** — `Dockerfile` using `sbt stage` output (`target/universal/stage`). Add `docker-compose.yml` with the app service exposing port 9000.
+12. **Add .gitignore file** - Add a `.gitignore` file to the root with the general stuff you want git to ignore from a Scala project like `*.class` or `target/*`
 
-12. **Write tests** — Unit test for `TaskService` using `cats-effect-testing-scalatest` with `AsyncWordSpec` + `CatsEffectSuite`. Cover: list empty, create success, findById found, findById NotFound. Read `reference/scala-play-templates.md` for the test template.
+13. **Add Docker support** — `Dockerfile` using `sbt stage` output (`target/universal/stage`). Add `docker-compose.yml` with the app service exposing port 9000.
 
-13. **Verify** — Run `sbt compile` with `-Xfatal-warnings` (zero warnings required) then `sbt test` (all green).
+14. **Write tests** — Unit test for `TaskService` using `cats-effect-testing-scalatest` with `AsyncWordSpec` + `CatsEffectSuite`. Cover: list empty, create success, findById found, findById NotFound. Read `reference/scala-play-templates.md` for the test template.
 
-14. **Print summary** — List all created files, `sbt run` to start, default port 9000, next steps (add Slick/Doobie for DB, add auth, etc.).
+15. **Verify** — Run `sbt compile` with `-Xfatal-warnings` (zero warnings required) then `sbt test` (all green).
+
+16. **Print summary** — List all created files, `sbt run` to start, default port 9000, next steps (add Slick/Doobie for DB, add auth, etc.).
